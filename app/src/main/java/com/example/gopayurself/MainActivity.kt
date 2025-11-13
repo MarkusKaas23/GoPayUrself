@@ -1,23 +1,17 @@
 package com.example.gopayurself
 
+import androidx.compose.ui.unit.dp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.gopayurself.ui.theme.GoPayUrselfTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
-
+import com.example.gopayurself.ui.theme.GoPayUrselfTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,7 +19,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             GoPayUrselfTheme {
-                GroupScreen()
+                Surface( // ensures background matches theme
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    GroupScreen()
+                }
             }
         }
     }
@@ -33,15 +32,34 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun GroupScreen(viewModel: GroupViewModel = viewModel()) {
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Finance Group", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+    val typography = MaterialTheme.typography
+    val colors = MaterialTheme.colorScheme
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            "Finance Group",
+            style = typography.headlineMedium.copy(color = colors.onBackground)
+        )
+
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("Members:", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+        Text(
+            "Members:",
+            style = typography.titleMedium.copy(color = colors.onSurface)
+        )
+
         Spacer(modifier = Modifier.height(8.dp))
 
         viewModel.members.forEach { name ->
-            Text("• $name", modifier = Modifier.padding(vertical = 4.dp))
+            Text(
+                "• $name",
+                style = typography.bodyLarge.copy(color = colors.onSurfaceVariant),
+                modifier = Modifier.padding(vertical = 2.dp)
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -49,21 +67,29 @@ fun GroupScreen(viewModel: GroupViewModel = viewModel()) {
         OutlinedTextField(
             value = viewModel.newMemberName,
             onValueChange = viewModel::onNewMemberNameChange,
-            label = { Text("Enter name") },
-            modifier = Modifier.fillMaxWidth()
+            label = { Text("Enter name", style = typography.labelLarge) },
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = colors.primary,
+                unfocusedBorderColor = colors.outline,
+                focusedLabelColor = colors.primary
+            )
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
         Button(
             onClick = viewModel::addMember,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colors.primary,
+                contentColor = colors.onPrimary
+            )
         ) {
-            Text("Add Person")
+            Text("Add Person", style = typography.labelLarge)
         }
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable
@@ -72,5 +98,3 @@ fun GroupScreenPreview() {
         GroupScreen(viewModel = GroupViewModel())
     }
 }
-
-
