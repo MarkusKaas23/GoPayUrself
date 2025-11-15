@@ -1,6 +1,5 @@
 package com.example.gopayurself
 
-import androidx.compose.ui.unit.dp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,9 +8,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.gopayurself.navigation.Screen
+import com.example.gopayurself.ui.screens.*
 import com.example.gopayurself.ui.theme.GoPayUrselfTheme
+import com.example.gopayurself.viewmodels.AppViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,11 +20,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             GoPayUrselfTheme {
-                Surface( // ensures background matches theme
+                Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    GroupScreen()
+                    AppNavigation()
                 }
             }
         }
@@ -31,70 +32,62 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun GroupScreen(viewModel: GroupViewModel = viewModel()) {
-    val typography = MaterialTheme.typography
-    val colors = MaterialTheme.colorScheme
+fun AppNavigation(viewModel: AppViewModel = viewModel()) {
+    var currentScreen by remember { mutableStateOf<Screen>(Screen.Login) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text(
-            "Finance Group",
-            style = typography.headlineMedium.copy(color = colors.onBackground)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            "Members:",
-            style = typography.titleMedium.copy(color = colors.onSurface)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        viewModel.members.forEach { name ->
-            Text(
-                "• $name",
-                style = typography.bodyLarge.copy(color = colors.onSurfaceVariant),
-                modifier = Modifier.padding(vertical = 2.dp)
+    when (currentScreen) {
+        Screen.Login -> {
+            LoginScreen(
+                onLoginSuccess = { email ->
+                    viewModel.login(email)
+                    currentScreen = Screen.Dashboard
+                }
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        OutlinedTextField(
-            value = viewModel.newMemberName,
-            onValueChange = viewModel::onNewMemberNameChange,
-            label = { Text("Enter name", style = typography.labelLarge) },
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = colors.primary,
-                unfocusedBorderColor = colors.outline,
-                focusedLabelColor = colors.primary
+        Screen.Dashboard -> {
+            DashboardScreen(
+                userEmail = viewModel.currentUserEmail,
+                groups = viewModel.groups,
+                onCreateGroup = {
+                    currentScreen = Screen.CreateGroup
+                },
+                onGroupClick = { group ->
+                    viewModel.selectGroup(group)
+                    currentScreen = Screen.GroupDetail
+                },
+                onLogout = {
+                    viewModel.logout()
+                    currentScreen = Screen.Login
+                }
             )
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Button(
-            onClick = viewModel::addMember,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = colors.primary,
-                contentColor = colors.onPrimary
-            )
-        ) {
-            Text("Add Person", style = typography.labelLarge)
         }
-    }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun GroupScreenPreview() {
-    GoPayUrselfTheme {
-        GroupScreen(viewModel = GroupViewModel())
+        Screen.CreateGroup -> {
+            CreateGroupScreen(
+                onGroupCreated = { name, members ->
+                    viewModel.createGroup(name, members)
+                    currentScreen = Screen.Dashboard
+                },
+                onNavigateBack = {
+                    currentScreen = Screen.Dashboard
+                }
+            )
+        }
+
+        Screen.GroupDetail -> {
+            viewModel.currentGroup?.let { group ->
+                GroupDetailScreen(
+                    group = group,
+                    onAddMember = { memberName ->
+                        viewModel.addMemberToCurrentGroup(memberName)
+                    },
+                    onNavigateBack = {
+                        viewModel.clearCurrentGroup()
+                        currentScreen = Screen.Dashboard
+                    }
+                )
+            }
+        }
     }
 }
