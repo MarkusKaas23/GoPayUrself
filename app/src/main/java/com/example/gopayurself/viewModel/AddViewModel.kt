@@ -42,7 +42,7 @@ class AppViewModel : ViewModel() {
             createdBy = currentUserEmail
         )
         groups = groups + newGroup
-        // In a real app, save to backend
+        //  Todo: save to backend
     }
 
     fun selectGroup(group: Group) {
@@ -66,14 +66,14 @@ class AppViewModel : ViewModel() {
     }
 
     private fun loadUserGroups() {
-        // Simulate loading groups - in real app, fetch from backend
-        // For demo purposes, create a sample group
+        // Simulate loading groups - Todo: fetch from backend
+        // For demo purposes, a sample group is created
         groups = listOf(
             Group(
                 id = UUID.randomUUID().toString(),
-                name = "Sample Group",
-                members = listOf("Alice", "Bob"),
-                totalExpenses = 150.50,
+                name = "Test Group",
+                members = listOf("Silas", "Alex"),
+                totalExpenses = 15000.69,
                 createdBy = currentUserEmail
             )
         )
