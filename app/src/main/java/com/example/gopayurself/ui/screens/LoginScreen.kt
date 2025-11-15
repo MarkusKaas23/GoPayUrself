@@ -1,12 +1,15 @@
 package com.example.gopayurself.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.example.gopayurself.R
 
 @Composable
 fun LoginScreen(
@@ -32,6 +35,19 @@ fun LoginScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.gopayurself_logo),
+                    contentDescription = "GoPayUrself Logo",
+                    modifier = Modifier.size(360.dp)
+                )
+            }
+
             Text(
                 "GoPayUrself",
                 style = typography.displayLarge,
@@ -44,7 +60,7 @@ fun LoginScreen(
                 color = colors.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = email,
@@ -94,8 +110,7 @@ fun LoginScreen(
                         return@Button
                     }
                     isLoading = true
-                    // Simulate login - in real app, this would be an API call
-                    // For now, accept any non-empty credentials
+
                     onLoginSuccess(email)
                 },
                 modifier = Modifier.fillMaxWidth(),
