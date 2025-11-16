@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: appdb
+    ports:
+      - "5432:5432"
+    volumes:
+      # This volume persists data :DD
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
