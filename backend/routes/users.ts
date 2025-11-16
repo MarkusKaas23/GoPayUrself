@@ -25,12 +25,4 @@ router.get('/users/me', requireAuth, async (req: AuthRequest, res: Response) => 
   }
 });
 
-/* POST book a car */
-
-/* POST unbook a car */
-
-/* POST favorite a car */
-
-/* POST unfavorite a car */
-
 export default router;
