@@ -5,6 +5,8 @@ sealed class Screen {
     object Dashboard : Screen()
     object CreateGroup : Screen()
     object GroupDetail : Screen()
+
+    object Signup : Screen()
 }
 
 class NavigationManager {

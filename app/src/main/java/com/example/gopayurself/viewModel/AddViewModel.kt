@@ -27,6 +27,12 @@ class AppViewModel : ViewModel() {
         loadUserGroups()
     }
 
+    fun signup(email: String) {
+        currentUserEmail = email
+        isLoggedIn = true
+        loadUserGroups()
+    }
+
     fun logout() {
         currentUserEmail = ""
         isLoggedIn = false

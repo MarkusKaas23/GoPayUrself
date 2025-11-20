@@ -41,6 +41,21 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
                 onLoginSuccess = { email ->
                     viewModel.login(email)
                     currentScreen = Screen.Dashboard
+                },
+                onNavigateToSignup = { // ADD THIS PARAMETER
+                    currentScreen = Screen.Signup
+                }
+            )
+        }
+
+        Screen.Signup -> {
+            SignupScreen(
+                onSignupSuccess = { email ->
+                    viewModel.signup(email)
+                    currentScreen = Screen.Dashboard
+                },
+                onNavigateToLogin = {
+                    currentScreen = Screen.Login
                 }
             )
         }
@@ -91,3 +106,6 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
         }
     }
 }
+
+
+
