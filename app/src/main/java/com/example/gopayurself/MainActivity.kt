@@ -42,7 +42,7 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
                     viewModel.login(email)
                     currentScreen = Screen.Dashboard
                 },
-                onNavigateToSignup = { // ADD THIS PARAMETER
+                onNavigateToSignup = {
                     currentScreen = Screen.Signup
                 }
             )
@@ -80,8 +80,8 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
 
         Screen.CreateGroup -> {
             CreateGroupScreen(
-                onGroupCreated = { name, members ->
-                    viewModel.createGroup(name, members)
+                onGroupCreated = { name, members, expenses ->
+                    viewModel.createGroup(name, members, expenses)
                     currentScreen = Screen.Dashboard
                 },
                 onNavigateBack = {
@@ -94,16 +94,22 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
             viewModel.currentGroup?.let { group ->
                 GroupDetailScreen(
                     group = group,
-                    currentUserEmail = viewModel.currentUserEmail, // Pass current user email
+                    currentUserEmail = viewModel.currentUserEmail,
                     onAddMember = { memberName ->
                         viewModel.addMemberToCurrentGroup(memberName)
                     },
-                    onRemoveMember = { memberName -> // Add this callback
+                    onRemoveMember = { memberName ->
                         viewModel.removeMemberFromCurrentGroup(memberName)
                     },
-                    onDeleteGroup = { // Add this callback
+                    onDeleteGroup = {
                         viewModel.deleteCurrentGroup()
                         currentScreen = Screen.Dashboard
+                    },
+                    onAddExpense = { description, amount, paidBy, participants ->
+                        viewModel.addExpenseToCurrentGroup(description, amount, paidBy, participants)
+                    },
+                    onPayDebt = { fromUser, toUser, amount ->
+                        viewModel.payDebt(fromUser, toUser, amount)
                     },
                     onNavigateBack = {
                         viewModel.clearCurrentGroup()
@@ -113,6 +119,7 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
             }
         }
     }
+
 }
 
 
