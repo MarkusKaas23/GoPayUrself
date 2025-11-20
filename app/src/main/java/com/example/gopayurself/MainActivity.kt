@@ -94,8 +94,16 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
             viewModel.currentGroup?.let { group ->
                 GroupDetailScreen(
                     group = group,
+                    currentUserEmail = viewModel.currentUserEmail, // Pass current user email
                     onAddMember = { memberName ->
                         viewModel.addMemberToCurrentGroup(memberName)
+                    },
+                    onRemoveMember = { memberName -> // Add this callback
+                        viewModel.removeMemberFromCurrentGroup(memberName)
+                    },
+                    onDeleteGroup = { // Add this callback
+                        viewModel.deleteCurrentGroup()
+                        currentScreen = Screen.Dashboard
                     },
                     onNavigateBack = {
                         viewModel.clearCurrentGroup()

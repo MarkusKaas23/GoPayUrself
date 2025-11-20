@@ -84,4 +84,23 @@ class AppViewModel : ViewModel() {
             )
         )
     }
+    // Add these methods to your AppViewModel
+    fun removeMemberFromCurrentGroup(memberName: String) {
+        currentGroup?.let { group ->
+            val updatedGroup = group.copy(
+                members = group.members.filter { it != memberName }
+            )
+            groups = groups.map {
+                if (it.id == group.id) updatedGroup else it
+            }
+            currentGroup = updatedGroup
+        }
+    }
+
+    fun deleteCurrentGroup() {
+        currentGroup?.let { groupToDelete ->
+            groups = groups.filter { it.id != groupToDelete.id }
+            currentGroup = null
+        }
+    }
 }
