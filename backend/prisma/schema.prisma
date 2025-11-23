@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  firstName     String
+  lastName      String
+  phoneNumber   String        @unique
+  password      String
+  notifications Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  ownedGroups   Group[]        @relation("GroupOwner")
+  memberships   GroupMember[]  @relation("GroupMembers")
+  paidExpenses  Expense[]      @relation("Payer")
+  expenseDebts  ExpenseSplit[] @relation("ExpenseDebts")
+}
+
+model Group {
+  id        String        @id @default(cuid())
+  name      String
+  ownerId   String
+  owner     User          @relation("GroupOwner", fields: [ownerId], references: [id])
+  members   GroupMember[] @relation("GroupMembers")
+  expenses  Expense[]     @relation("GroupExpenses")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  userId   String
+  groupId  String
+  user     User     @relation("GroupMembers", fields: [userId], references: [id])
+  group    Group    @relation("GroupMembers", fields: [groupId], references: [id])
+  joinedAt DateTime @default(now())
+
+  @@unique([userId, groupId])
+}
+
+model Expense {
+  id          String        @id @default(cuid())
+  amount      Float
+  date        DateTime
+  groupId     String
+  group       Group         @relation("GroupExpenses", fields: [groupId], references: [id])
+  payerId     String
+  payer       User          @relation("Payer", fields: [payerId], references: [id])
+  splits      ExpenseSplit[] @relation("ExpenseSplits")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model ExpenseSplit {
+  id        String   @id @default(cuid())
+  expenseId String
+  expense   Expense  @relation("ExpenseSplits", fields: [expenseId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation("ExpenseDebts", fields: [userId], references: [id])
+  amount    Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
