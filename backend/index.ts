@@ -1,8 +1,10 @@
 import express from 'express';
+import 'dotenv/config'
 import authRouter from './routes/auth.js';
-import carsRouter from './routes/cars.js';
 import statusRouter from './routes/status.js';
 import usersRouter from './routes/users.js';
+import groupsRouter from './routes/groups.js';
+import expensesRouter from './routes/expenses.js';
 import { disconnectPrisma } from './utils/prisma.js';
 
 const app = express();
@@ -13,9 +15,10 @@ app.use(express.json());
 
 // Routes
 app.use('/', statusRouter);
-app.use('/', carsRouter);
 app.use('/', authRouter);
 app.use('/', usersRouter);
+app.use('/', groupsRouter);
+app.use('/', expensesRouter);
 
 // Start the server
 app.listen(PORT, async () => {

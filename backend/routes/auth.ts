@@ -11,7 +11,7 @@ const router = Router();
 // POST signup
 router.post('/auth/signup', async (req: Request, res: Response) => {
   try {
-    const { firstName, lastName, email, password } = signupSchema.parse(req.body);
+    const { firstName, lastName, email, password, phoneNumber } = signupSchema.parse(req.body);
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -30,6 +30,7 @@ router.post('/auth/signup', async (req: Request, res: Response) => {
         firstName,
         lastName,
         email,
+        phoneNumber,
         password: hashedPassword,
       },
     });

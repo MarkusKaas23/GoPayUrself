@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -11,32 +5,67 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-model Car {
-  id             String   @id @default(cuid())
-  name           String
-  location       String
-  price          Float
-  image          String
-  availableFrom  DateTime
-  availableTo    DateTime
-  description    String
-  features       String[]
-  mileage        Int
-  fuelType       String
-  transmission   String
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  firstName     String
+  lastName      String
+  phoneNumber   String        @unique
+  password      String
+  notifications Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  ownedGroups   Group[]        @relation("GroupOwner")
+  memberships   GroupMember[]  @relation("GroupMembers")
+  paidExpenses  Expense[]      @relation("Payer")
+  expenseDebts  ExpenseSplit[] @relation("ExpenseDebts")
+}
+
+model Group {
+  id        String        @id @default(cuid())
+  name      String
+  ownerId   String
+  owner     User          @relation("GroupOwner", fields: [ownerId], references: [id])
+  members   GroupMember[] @relation("GroupMembers")
+  expenses  Expense[]     @relation("GroupExpenses")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  userId   String
+  groupId  String
+  user     User     @relation("GroupMembers", fields: [userId], references: [id])
+  group    Group    @relation("GroupMembers", fields: [groupId], references: [id])
+  joinedAt DateTime @default(now())
+
+  @@unique([userId, groupId])
+}
+
+model Expense {
+  id          String        @id @default(cuid())
+  amount      Float
+  date        DateTime
+  groupId     String
+  group       Group         @relation("GroupExpenses", fields: [groupId], references: [id])
+  payerId     String
+  payer       User          @relation("Payer", fields: [payerId], references: [id])
+  splits      ExpenseSplit[] @relation("ExpenseSplits")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model ExpenseSplit {
   id        String   @id @default(cuid())
-  firstName String
-  lastName  String
-  email     String   @unique
-  password  String
+  expenseId String
+  expense   Expense  @relation("ExpenseSplits", fields: [expenseId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation("ExpenseDebts", fields: [userId], references: [id])
+  amount    Float
   createdAt DateTime @default(now())
-  cars      Car[]
+  updatedAt DateTime @updatedAt
 }
