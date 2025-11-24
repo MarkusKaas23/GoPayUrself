@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gopayurself.api.ApiClient
+import com.example.gopayurself.api.models.GroupApi
 import com.example.gopayurself.navigation.Screen
 import com.example.gopayurself.ui.screens.*
 import com.example.gopayurself.ui.theme.GoPayUrselfTheme
@@ -70,9 +71,12 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
                 onCreateGroup = {
                     currentScreen = Screen.CreateGroup
                 },
-                onGroupClick = { group ->
+                onGroupClick = { group: GroupApi ->
                     viewModel.selectGroup(group)
                     currentScreen = Screen.GroupDetail
+                },
+                onNavigateToSettings = {
+                    currentScreen = Screen.UserSettings
                 },
                 onLogout = {
                     viewModel.logout()
@@ -125,8 +129,26 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
                 )
             }
         }
+        Screen.UserSettings -> {
+            UserSettingsScreen(
+                userEmail = viewModel.currentUser?.email ?: "",
+                firstName = viewModel.currentUser?.firstName ?: "",
+                lastName = viewModel.currentUser?.lastName ?: "",
+                phoneNumber = viewModel.currentUser?.phoneNumber ?: "",
+                notificationsEnabled = viewModel.notificationsEnabled,
+                onNotificationToggle = { enabled ->
+                    viewModel.toggleNotifications(enabled)
+                },
+                onNavigateBack = {
+                    currentScreen = Screen.Dashboard
+                },
+                onLogout = {
+                    viewModel.logout()
+                    currentScreen = Screen.Login
+                }
+            )
+        }
     }
-
 }
 
 

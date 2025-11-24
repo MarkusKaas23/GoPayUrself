@@ -228,8 +228,6 @@ class AppViewModel(application: android.app.Application) : AndroidViewModel(appl
         }
     }
 
-    // In AppViewModel
-    // In AppViewModel
     fun addExpenseToCurrentGroup(description: String, amount: Double, paidBy: String, participants: List<String>) {
         currentGroup?.let { group ->
             viewModelScope.launch {
@@ -329,5 +327,12 @@ class AppViewModel(application: android.app.Application) : AndroidViewModel(appl
                 isLoading = false
             }
         }
+    }
+
+    val notificationsEnabled get() = currentUser?.notifications ?: false
+
+    fun toggleNotifications(enabled: Boolean) {
+        // TODO: Implement API call to update notifications
+        // For now, just update local state if needed
     }
 }
