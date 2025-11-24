@@ -22,7 +22,11 @@ fun DashboardScreen(
     groups: List<GroupApi>,
     errorMessage: String?,
     onCreateGroup: () -> Unit,
+<<<<<<< HEAD
     onGroupClick: (GroupApi) -> Unit,
+=======
+    onGroupClick: (Group) -> Unit,
+>>>>>>> origin/master
     onNavigateToSettings: () -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
