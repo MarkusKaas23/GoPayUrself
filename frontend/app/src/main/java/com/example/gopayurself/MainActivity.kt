@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.gopayurself.api.ApiClient
 import com.example.gopayurself.navigation.Screen
 import com.example.gopayurself.ui.screens.*
 import com.example.gopayurself.ui.theme.GoPayUrselfTheme
@@ -17,6 +18,7 @@ import com.example.gopayurself.viewmodels.AppViewModel
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ApiClient.init(this)
         enableEdgeToEdge()
         setContent {
             GoPayUrselfTheme {
@@ -38,8 +40,8 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
     when (currentScreen) {
         Screen.Login -> {
             LoginScreen(
-                onLoginSuccess = { email ->
-                    viewModel.login(email)
+                viewModel = viewModel,
+                onLoginSuccess = {
                     currentScreen = Screen.Dashboard
                 },
                 onNavigateToSignup = {
@@ -50,8 +52,8 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
 
         Screen.Signup -> {
             SignupScreen(
-                onSignupSuccess = { email ->
-                    viewModel.signup(email)
+                viewModel = viewModel,
+                onSignupSuccess = {
                     currentScreen = Screen.Dashboard
                 },
                 onNavigateToLogin = {
@@ -62,8 +64,9 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
 
         Screen.Dashboard -> {
             DashboardScreen(
-                userEmail = viewModel.currentUserEmail,
+                userEmail = viewModel.currentUser?.email ?: "",
                 groups = viewModel.groups,
+                errorMessage = viewModel.errorMessage,
                 onCreateGroup = {
                     currentScreen = Screen.CreateGroup
                 },
@@ -80,8 +83,8 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
 
         Screen.CreateGroup -> {
             CreateGroupScreen(
-                onGroupCreated = { name, members, expenses ->
-                    viewModel.createGroup(name, members, expenses)
+                onGroupCreated = { name, memberPhones ->
+                    viewModel.createGroup(name, memberPhones)
                     currentScreen = Screen.Dashboard
                 },
                 onNavigateBack = {
@@ -94,7 +97,8 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
             viewModel.currentGroup?.let { group ->
                 GroupDetailScreen(
                     group = group,
-                    currentUserEmail = viewModel.currentUserEmail,
+                    expenses = viewModel.currentGroupExpenses,
+                    currentUserEmail = viewModel.currentUser?.email ?: "",
                     onAddMember = { memberName ->
                         viewModel.addMemberToCurrentGroup(memberName)
                     },
@@ -110,6 +114,9 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
                     },
                     onPayDebt = { fromUser, toUser, amount ->
                         viewModel.payDebt(fromUser, toUser, amount)
+                    },
+                    onDeleteExpense = { expenseId ->
+                        viewModel.deleteExpense(expenseId)
                     },
                     onNavigateBack = {
                         viewModel.clearCurrentGroup()

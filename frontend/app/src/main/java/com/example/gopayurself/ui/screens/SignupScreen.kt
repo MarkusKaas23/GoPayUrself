@@ -13,17 +13,23 @@ import com.example.gopayurself.R
 
 @Composable
 fun SignupScreen(
-    onSignupSuccess: (String) -> Unit,
+    viewModel: com.example.gopayurself.viewmodels.AppViewModel,
+    onSignupSuccess: () -> Unit,
     onNavigateToLogin: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(viewModel.isLoggedIn) {
+        if (viewModel.isLoggedIn) {
+            onSignupSuccess()
+        }
+    }
 
     val typography = MaterialTheme.typography
     val colors = MaterialTheme.colorScheme
@@ -75,12 +81,11 @@ fun SignupScreen(
                     value = firstName,
                     onValueChange = {
                         firstName = it
-                        errorMessage = null
                     },
                     label = { Text("First Name") },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
-                    enabled = !isLoading,
+                    enabled = !viewModel.isLoading,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = colors.primary,
                         unfocusedBorderColor = colors.outline
@@ -91,12 +96,11 @@ fun SignupScreen(
                     value = lastName,
                     onValueChange = {
                         lastName = it
-                        errorMessage = null
                     },
                     label = { Text("Last Name") },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
-                    enabled = !isLoading,
+                    enabled = !viewModel.isLoading,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = colors.primary,
                         unfocusedBorderColor = colors.outline
@@ -108,12 +112,26 @@ fun SignupScreen(
                 value = email,
                 onValueChange = {
                     email = it
-                    errorMessage = null
                 },
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                enabled = !isLoading,
+                enabled = !viewModel.isLoading,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = colors.primary,
+                    unfocusedBorderColor = colors.outline
+                )
+            )
+
+            OutlinedTextField(
+                value = phoneNumber,
+                onValueChange = {
+                    phoneNumber = it
+                },
+                label = { Text("Phone Number") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                enabled = !viewModel.isLoading,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = colors.primary,
                     unfocusedBorderColor = colors.outline
@@ -124,13 +142,12 @@ fun SignupScreen(
                 value = password,
                 onValueChange = {
                     password = it
-                    errorMessage = null
                 },
                 label = { Text("Password") },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                enabled = !isLoading,
+                enabled = !viewModel.isLoading,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = colors.primary,
                     unfocusedBorderColor = colors.outline
@@ -141,22 +158,21 @@ fun SignupScreen(
                 value = confirmPassword,
                 onValueChange = {
                     confirmPassword = it
-                    errorMessage = null
                 },
                 label = { Text("Confirm Password") },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                enabled = !isLoading,
+                enabled = !viewModel.isLoading,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = colors.primary,
                     unfocusedBorderColor = colors.outline
                 )
             )
 
-            if (errorMessage != null) {
+            viewModel.errorMessage?.let { error ->
                 Text(
-                    text = errorMessage!!,
+                    text = error,
                     color = colors.error,
                     style = typography.bodyMedium
                 )
@@ -164,34 +180,28 @@ fun SignupScreen(
 
             Button(
                 onClick = {
-                    if (firstName.isBlank() || lastName.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
-                        errorMessage = "Please fill in all fields"
+                    if (firstName.isBlank() || lastName.isBlank() || email.isBlank() || phoneNumber.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
                         return@Button
                     }
 
                     if (password != confirmPassword) {
-                        errorMessage = "Passwords do not match"
                         return@Button
                     }
 
                     if (password.length < 6) {
-                        errorMessage = "Password must be at least 6 characters"
                         return@Button
                     }
 
-                    isLoading = true
-
-                    // TODO: Implement actual signup logic
-                    onSignupSuccess(email)
+                    viewModel.signup(firstName, lastName, email, phoneNumber, password)
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading,
+                enabled = !viewModel.isLoading,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = colors.primary,
                     contentColor = colors.onPrimary
                 )
             ) {
-                if (isLoading) {
+                if (viewModel.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         color = colors.onPrimary
@@ -203,7 +213,7 @@ fun SignupScreen(
 
             TextButton(
                 onClick = onNavigateToLogin,
-                enabled = !isLoading
+                enabled = !viewModel.isLoading
             ) {
                 Text("Already have an account? Login", color = colors.primary)
             }

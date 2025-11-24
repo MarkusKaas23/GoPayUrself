@@ -12,15 +12,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.gopayurself.models.Group
+import com.example.gopayurself.api.models.GroupApi
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     userEmail: String,
-    groups: List<Group>,
+    groups: List<GroupApi>,
+    errorMessage: String?,
     onCreateGroup: () -> Unit,
-    onGroupClick: (Group) -> Unit,
+    onGroupClick: (GroupApi) -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -56,6 +57,15 @@ fun DashboardScreen(
             }
         }
     ) { paddingValues ->
+        errorMessage?.let { error ->
+            Text(
+                text = error,
+                color = colors.error,
+                style = typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
+
         if (groups.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -100,7 +110,7 @@ fun DashboardScreen(
 
 @Composable
 fun GroupCard(
-    group: Group,
+    group: GroupApi,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -130,19 +140,12 @@ fun GroupCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "${group.members.size} members",
+                text = "${group.members.size + 1} members",
                 style = typography.bodyMedium,
                 color = colors.onSurfaceVariant
             )
 
-            if (group.totalExpenses > 0) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Total expenses: $${String.format("%.2f", group.totalExpenses)}",
-                    style = typography.bodyMedium,
-                    color = colors.primary
-                )
-            }
+            // TODO: Fetch and display total expenses for group
         }
     }
 }

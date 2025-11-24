@@ -10,17 +10,24 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.gopayurself.R
+import kotlinx.coroutines.delay
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: (String) -> Unit,
+    viewModel: com.example.gopayurself.viewmodels.AppViewModel,
+    onLoginSuccess: () -> Unit,
     onNavigateToSignup: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Navigate to dashboard when logged in
+    LaunchedEffect(viewModel.isLoggedIn) {
+        if (viewModel.isLoggedIn) {
+            onLoginSuccess()
+        }
+    }
 
     val typography = MaterialTheme.typography
     val colors = MaterialTheme.colorScheme
@@ -67,12 +74,11 @@ fun LoginScreen(
                 value = email,
                 onValueChange = {
                     email = it
-                    errorMessage = null
                 },
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                enabled = !isLoading,
+                enabled = !viewModel.isLoading,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = colors.primary,
                     unfocusedBorderColor = colors.outline
@@ -83,22 +89,21 @@ fun LoginScreen(
                 value = password,
                 onValueChange = {
                     password = it
-                    errorMessage = null
                 },
                 label = { Text("Password") },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                enabled = !isLoading,
+                enabled = !viewModel.isLoading,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = colors.primary,
                     unfocusedBorderColor = colors.outline
                 )
             )
 
-            if (errorMessage != null) {
+            viewModel.errorMessage?.let { error ->
                 Text(
-                    text = errorMessage!!,
+                    text = error,
                     color = colors.error,
                     style = typography.bodyMedium
                 )
@@ -107,21 +112,18 @@ fun LoginScreen(
             Button(
                 onClick = {
                     if (email.isBlank() || password.isBlank()) {
-                        errorMessage = "Please fill in all fields"
                         return@Button
                     }
-                    isLoading = true
-
-                    onLoginSuccess(email)
+                    viewModel.login(email, password)
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading,
+                enabled = !viewModel.isLoading,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = colors.primary,
                     contentColor = colors.onPrimary
                 )
             ) {
-                if (isLoading) {
+                if (viewModel.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         color = colors.onPrimary
@@ -133,7 +135,7 @@ fun LoginScreen(
 
             TextButton(
                 onClick = onNavigateToSignup,
-                enabled = !isLoading
+                enabled = !viewModel.isLoading
             ) {
                 Text("Don't have an account? Sign up", color = colors.primary)
             }

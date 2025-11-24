@@ -30,11 +30,11 @@ router.get('/expenses', requireAuth, async (req: AuthRequest, res: Response) => 
     const expenses = await prisma.expense.findMany({
       where: { groupId },
       include: {
-        payer: { select: { id: true, firstName: true, lastName: true } },
+        payer: { select: { id: true, firstName: true, lastName: true, email: true } },
         group: { select: { id: true, name: true } },
         splits: {
           include: {
-            user: { select: { id: true, firstName: true, lastName: true } },
+            user: { select: { id: true, firstName: true, lastName: true, email: true } },
           },
         },
       },
@@ -51,7 +51,7 @@ router.get('/expenses', requireAuth, async (req: AuthRequest, res: Response) => 
 // POST create expense
 router.post('/expenses', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const { amount, groupId, splits } = createExpenseSchema.parse(req.body);
+    const { amount, groupId, payerId, splits } = createExpenseSchema.parse(req.body);
 
     // Check if user is member of the group
     const membership = await prisma.groupMember.findFirst({
@@ -65,17 +65,31 @@ router.post('/expenses', requireAuth, async (req: AuthRequest, res: Response) =>
       return res.status(403).json({ error: 'You are not a member of this group' });
     }
 
-    // Get all members of the group
+    // Check if payer is a member of the group (including owner)
+    const group = await prisma.group.findUnique({
+      where: { id: groupId },
+      select: { ownerId: true },
+    });
+
+    if (!group) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+
     const groupMembers = await prisma.groupMember.findMany({
       where: { groupId },
       select: { userId: true },
     });
 
     const memberIds = groupMembers.map(m => m.userId);
+    const allUserIds = [group.ownerId, ...memberIds];
+
+    if (!allUserIds.includes(payerId)) {
+      return res.status(400).json({ error: 'Payer is not a member of the group' });
+    }
 
     // Check that all splits userIds are members
     const splitUserIds = splits.map(s => s.userId);
-    const invalidUsers = splitUserIds.filter(id => !memberIds.includes(id));
+    const invalidUsers = splitUserIds.filter(id => !allUserIds.includes(id));
 
     if (invalidUsers.length > 0) {
       return res.status(400).json({ error: 'Some users in splits are not members of the group' });
@@ -86,7 +100,7 @@ router.post('/expenses', requireAuth, async (req: AuthRequest, res: Response) =>
         amount,
         date: new Date(),
         groupId,
-        payerId: req.user!.id,
+        payerId,
         splits: {
           create: splits.map(split => ({
             userId: split.userId,
@@ -95,11 +109,11 @@ router.post('/expenses', requireAuth, async (req: AuthRequest, res: Response) =>
         },
       },
       include: {
-        payer: { select: { id: true, firstName: true, lastName: true } },
+        payer: { select: { id: true, firstName: true, lastName: true, email: true } },
         group: { select: { id: true, name: true } },
         splits: {
           include: {
-            user: { select: { id: true, firstName: true, lastName: true } },
+            user: { select: { id: true, firstName: true, lastName: true, email: true } },
           },
         },
       },

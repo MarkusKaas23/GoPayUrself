@@ -3,6 +3,7 @@ import { z } from "zod";
 export const createExpenseSchema = z.object({
   amount: z.number().positive(),
   groupId: z.string().min(1),
+  payerId: z.string().min(1),
   splits: z.array(z.object({
     userId: z.string().min(1),
     amount: z.number().positive(),

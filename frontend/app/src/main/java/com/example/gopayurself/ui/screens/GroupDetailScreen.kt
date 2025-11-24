@@ -9,21 +9,23 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.gopayurself.models.Group
-import com.example.gopayurself.models.ExpenseData
+import com.example.gopayurself.api.models.GroupApi
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupDetailScreen(
-    group: Group,
+    group: GroupApi,
+    expenses: List<com.example.gopayurself.api.models.ExpenseApi>,
     currentUserEmail: String,
     onAddMember: (String) -> Unit,
     onRemoveMember: (String) -> Unit,
     onDeleteGroup: () -> Unit,
     onAddExpense: (String, Double, String, List<String>) -> Unit,
     onPayDebt: (String, String, Double) -> Unit,
+    onDeleteExpense: (String) -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -40,15 +42,16 @@ fun GroupDetailScreen(
     var expenseDescription by remember { mutableStateOf("") }
     var expenseAmount by remember { mutableStateOf("") }
     var expensePaidBy by remember { mutableStateOf("") }
+    var payerDropdownExpanded by remember { mutableStateOf(false) }
     var selectedParticipants by remember { mutableStateOf<Set<String>>(emptySet()) }
 
     val typography = MaterialTheme.typography
     val colors = MaterialTheme.colorScheme
 
-    val isOwner = group.createdBy == currentUserEmail
+    val isOwner = group.owner.email == currentUserEmail
 
     // Calculate balances with participant selection
-    val memberBalances = calculateBalancesWithParticipants(group)
+    val memberBalances = calculateBalancesWithParticipants(group, expenses)
     val currentUserBalance = memberBalances[currentUserEmail] ?: 0.0
 
     Scaffold(
@@ -98,7 +101,7 @@ fun GroupDetailScreen(
                         color = colors.onPrimaryContainer
                     )
                     Text(
-                        "$${String.format("%.2f", group.totalExpenses)}",
+                        "$${String.format("%.2f", expenses.sumOf { it.amount })}",
                         style = typography.displayMedium,
                         color = colors.onPrimaryContainer
                     )
@@ -128,23 +131,23 @@ fun GroupDetailScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Expenses Section
+            // Expenses Section - TODO: Fetch and display expenses
             Text(
-                "Recent Expenses:",
+                "Expenses:",
                 style = typography.titleMedium,
                 color = colors.onSurface
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (group.expenses.isEmpty()) {
+            if (expenses.isEmpty()) {
                 Text(
-                    "No expenses yet. Add your first expense!",
+                    "No expenses yet",
                     style = typography.bodyMedium,
                     color = colors.onSurfaceVariant
                 )
             } else {
-                group.expenses.takeLast(5).reversed().forEach { expense ->
+                expenses.forEach { expense ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -156,29 +159,51 @@ fun GroupDetailScreen(
                         Column(
                             modifier = Modifier.padding(12.dp)
                         ) {
-                            Row {
-                                Text(
-                                    expense.description,
-                                    style = typography.bodyMedium,
-                                    color = colors.onSurface,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Text(
-                                    "$${String.format("%.2f", expense.amount)}",
-                                    style = typography.bodyMedium,
-                                    color = colors.primary
-                                )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            expense.payer.firstName + " " + expense.payer.lastName,
+                                            style = typography.bodyMedium,
+                                            color = colors.onSurface
+                                        )
+                                        Text(
+                                            "$${String.format("%.2f", expense.amount)}",
+                                            style = typography.bodyLarge,
+                                            color = colors.primary
+                                        )
+                                    }
+                                    Text(
+                                        "Paid for: ${expense.splits.joinToString(", ") { "${it.user.firstName} ${it.user.lastName}" }}",
+                                        style = typography.bodySmall,
+                                        color = colors.onSurfaceVariant
+                                    )
+                                    Text(
+                                        "Date: ${expense.date.substring(0, 10)}", // Show date part only
+                                        style = typography.bodySmall,
+                                        color = colors.onSurfaceVariant
+                                    )
+                                }
+                                if (expense.payer.email == currentUserEmail) {
+                                    IconButton(
+                                        onClick = { onDeleteExpense(expense.id) },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = "Delete Expense",
+                                            tint = colors.error
+                                        )
+                                    }
+                                }
                             }
-                            Text(
-                                "Paid by: ${expense.paidBy}",
-                                style = typography.bodySmall,
-                                color = colors.onSurfaceVariant
-                            )
-                            Text(
-                                "Split between: ${expense.participants.joinToString(", ")}",
-                                style = typography.bodySmall,
-                                color = colors.onSurfaceVariant
-                            )
                         }
                     }
                 }
@@ -210,10 +235,12 @@ fun GroupDetailScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Show balances for each member with Pay buttons
-            memberBalances.forEach { (member, balance) ->
-                // Show Pay button if current user owes money to this member
-                val shouldShowPayButton = balance > 0 && member != currentUserEmail
+            val allUsers = listOf(group.owner) + group.members.map { it.user }
+            // Show balances for each user with Pay buttons
+            allUsers.forEach { user ->
+                val balance = memberBalances[user.email] ?: 0.0
+                // Show Pay button if current user owes money to this user
+                val shouldShowPayButton = balance > 0 && user.email != currentUserEmail
 
                 Card(
                     modifier = Modifier
@@ -221,7 +248,7 @@ fun GroupDetailScreen(
                         .padding(vertical = 4.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = when {
-                            member == currentUserEmail -> colors.primaryContainer.copy(alpha = 0.3f)
+                            user.email == currentUserEmail -> colors.primaryContainer.copy(alpha = 0.3f)
                             else -> colors.surfaceVariant
                         }
                     )
@@ -235,7 +262,7 @@ fun GroupDetailScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(
-                                "$member ${if (member == group.createdBy) "(Owner)" else ""}",
+                                "${user.firstName} ${user.lastName} ${if (user.id == group.ownerId) "(Owner)" else ""}",
                                 style = typography.bodyMedium,
                                 color = colors.onSurface
                             )
@@ -254,12 +281,12 @@ fun GroupDetailScreen(
                             )
                         }
 
-                        // Show Pay button if current user owes money to this member
+                        // Show Pay button if current user owes money to this user
                         if (shouldShowPayButton) {
                             Spacer(modifier = Modifier.width(8.dp))
                             Button(
                                 onClick = {
-                                    memberToPay = member
+                                    memberToPay = "${user.firstName} ${user.lastName}"
                                     amountToPay = balance
                                     showPayDialog = true
                                 },
@@ -275,11 +302,11 @@ fun GroupDetailScreen(
                         }
 
                         // Show remove button for owner (except themselves and if not the only member)
-                        if (isOwner && member != group.createdBy && group.members.size > 1) {
+                        if (isOwner && user.email != group.owner.email && group.members.size > 1) {
                             Spacer(modifier = Modifier.width(8.dp))
                             IconButton(
                                 onClick = {
-                                    selectedMember = member
+                                    selectedMember = "${user.firstName} ${user.lastName}"
                                     showMemberMenu = true
                                 },
                                 modifier = Modifier.size(24.dp)
@@ -357,34 +384,59 @@ fun GroupDetailScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    OutlinedTextField(
-                        value = expensePaidBy,
-                        onValueChange = { expensePaidBy = it },
-                        label = { Text("Who paid?") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
+                    val allUsers = listOf(group.owner) + group.members.map { it.user }
+                    ExposedDropdownMenuBox(
+                        expanded = payerDropdownExpanded,
+                        onExpandedChange = { payerDropdownExpanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = expensePaidBy,
+                            onValueChange = {},
+                            label = { Text("Who paid?") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = payerDropdownExpanded) }
+                        )
+                        ExposedDropdownMenu(
+                            expanded = payerDropdownExpanded,
+                            onDismissRequest = { payerDropdownExpanded = false }
+                        ) {
+                            allUsers.forEach { user ->
+                                val userName = "${user.firstName} ${user.lastName}"
+                                DropdownMenuItem(
+                                    text = { Text(userName) },
+                                    onClick = {
+                                        expensePaidBy = userName
+                                        payerDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text("Who should split this expense?", style = typography.labelMedium)
 
-                    group.members.forEach { member ->
+                    allUsers.forEach { user ->
+                        val userName = "${user.firstName} ${user.lastName}"
                         Row(
                             modifier = Modifier.padding(vertical = 4.dp)
                         ) {
                             Checkbox(
-                                checked = selectedParticipants.contains(member),
+                                checked = selectedParticipants.contains(userName),
                                 onCheckedChange = { checked ->
                                     selectedParticipants = if (checked) {
-                                        selectedParticipants + member
+                                        selectedParticipants + userName
                                     } else {
-                                        selectedParticipants - member
+                                        selectedParticipants - userName
                                     }
                                 }
                             )
                             Text(
-                                text = member,
+                                text = userName,
                                 style = typography.bodyMedium,
                                 modifier = Modifier.padding(start = 8.dp)
                             )
@@ -403,6 +455,7 @@ fun GroupDetailScreen(
                             expenseDescription = ""
                             expenseAmount = ""
                             expensePaidBy = ""
+                            payerDropdownExpanded = false
                             selectedParticipants = emptySet()
                             showAddExpenseDialog = false
                         }
@@ -420,6 +473,7 @@ fun GroupDetailScreen(
                         expenseDescription = ""
                         expenseAmount = ""
                         expensePaidBy = ""
+                        payerDropdownExpanded = false
                         selectedParticipants = emptySet()
                     }
                 ) {
@@ -532,18 +586,27 @@ fun GroupDetailScreen(
 }
 
 // Balance calculation with participant selection
-private fun calculateBalancesWithParticipants(group: Group): Map<String, Double> {
+private fun calculateBalancesWithParticipants(group: com.example.gopayurself.api.models.GroupApi, expenses: List<com.example.gopayurself.api.models.ExpenseApi>): Map<String, Double> {
+    val allUsers = listOf(group.owner) + group.members.map { it.user }
     val balances = mutableMapOf<String, Double>()
 
-    group.expenses.forEach { expense ->
-        val amountPerPerson = expense.amount / expense.participants.size
+    // Initialize balances to 0
+    allUsers.forEach { balances[it.email] = 0.0 }
 
-        // Person who paid gets money back from the participants
-        balances[expense.paidBy] = (balances[expense.paidBy] ?: 0.0) + expense.amount
+    // Calculate balances from expenses
+    expenses.forEach { expense ->
+        val payerEmail = expense.payer.email
+        val totalAmount = expense.amount
+        val numSplits = expense.splits.size
+        val splitAmount = if (numSplits > 0) totalAmount / numSplits else 0.0
 
-        // Only the selected participants owe their share
-        expense.participants.forEach { participant ->
-            balances[participant] = (balances[participant] ?: 0.0) - amountPerPerson
+        // Payer gets credit for the full amount
+        balances[payerEmail] = (balances[payerEmail] ?: 0.0) + totalAmount
+
+        // Each participant owes their share
+        expense.splits.forEach { split ->
+            val participantEmail = split.user.email
+            balances[participantEmail] = (balances[participantEmail] ?: 0.0) - split.amount
         }
     }
 
