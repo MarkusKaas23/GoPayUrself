@@ -1,25 +1,51 @@
 package com.example.gopayurself
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.gopayurself.api.ApiClient
 import com.example.gopayurself.api.models.GroupApi
 import com.example.gopayurself.navigation.Screen
 import com.example.gopayurself.ui.screens.*
 import com.example.gopayurself.ui.theme.GoPayUrselfTheme
+import com.example.gopayurself.utils.NotificationHelper
 import com.example.gopayurself.viewmodels.AppViewModel
 
 class MainActivity : ComponentActivity() {
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            // Permission granted, notifications will work
+        } else {
+            // Permission denied, show a message or handle gracefully
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Initialize API client
         ApiClient.init(this)
+
+        // Create notification channel
+        NotificationHelper.createNotificationChannel(this)
+
+        // Request notification permission for Android 13+
+        requestNotificationPermission()
+
         enableEdgeToEdge()
         setContent {
             GoPayUrselfTheme {
@@ -28,6 +54,23 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     AppNavigation()
+                }
+            }
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            when {
+                ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED -> {
+                    // Permission already granted
+                }
+                else -> {
+                    // Request permission
+                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
         }
@@ -122,6 +165,9 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
                     onDeleteExpense = { expenseId ->
                         viewModel.deleteExpense(expenseId)
                     },
+                    onSendReminder = { userName, amount ->
+                        viewModel.sendPaymentReminder(userName, amount)
+                    },
                     onNavigateBack = {
                         viewModel.clearCurrentGroup()
                         currentScreen = Screen.Dashboard
@@ -150,6 +196,3 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
         }
     }
 }
-
-
-

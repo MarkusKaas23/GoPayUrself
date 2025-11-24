@@ -1,5 +1,6 @@
 package com.example.gopayurself.viewmodels
 
+import android.app.Application
 import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -10,16 +11,15 @@ import com.example.gopayurself.api.TokenManager
 import com.example.gopayurself.api.models.ExpenseApi
 import com.example.gopayurself.api.models.GroupApi
 import com.example.gopayurself.api.models.User
-import com.example.gopayurself.models.ExpenseData
-import com.example.gopayurself.models.Group
 import com.example.gopayurself.repository.AuthRepository
 import com.example.gopayurself.repository.ExpenseRepository
 import com.example.gopayurself.repository.GroupRepository
 import com.example.gopayurself.repository.UserRepository
+import com.example.gopayurself.utils.NotificationHelper
 import kotlinx.coroutines.launch
-import java.util.UUID
 
-class AppViewModel(application: android.app.Application) : AndroidViewModel(application) {
+class AppViewModel(application: Application) : AndroidViewModel(application) {
+    private val context: Context = application.applicationContext
     private val tokenManager = TokenManager(getApplication())
     private val authRepository = AuthRepository(tokenManager)
     private val userRepository = UserRepository()
@@ -130,21 +130,6 @@ class AppViewModel(application: android.app.Application) : AndroidViewModel(appl
         // For now, this is a stub
     }
 
-    private fun loadCurrentUser() {
-        viewModelScope.launch {
-            try {
-                val result = userRepository.getCurrentUser()
-                result.onSuccess { user ->
-                    currentUser = user
-                }.onFailure { exception ->
-                    errorMessage = exception.message ?: "Failed to load user"
-                }
-            } catch (e: Exception) {
-                errorMessage = e.message ?: "Failed to load user"
-            }
-        }
-    }
-
     private fun loadUserAndGroups() {
         viewModelScope.launch {
             try {
@@ -167,23 +152,6 @@ class AppViewModel(application: android.app.Application) : AndroidViewModel(appl
         }
     }
 
-    private fun loadUserGroups() {
-        currentUser?.let { user ->
-            viewModelScope.launch {
-                try {
-                    val result = groupRepository.getGroups(user.id)
-                    result.onSuccess { groupList ->
-                        groups = groupList
-                    }.onFailure { exception ->
-                        errorMessage = exception.message ?: "Failed to load groups"
-                    }
-                } catch (e: Exception) {
-                    errorMessage = e.message ?: "Failed to load groups"
-                }
-            }
-        }
-    }
-
     private fun loadCurrentGroupExpenses() {
         currentGroup?.let { group ->
             viewModelScope.launch {
@@ -200,7 +168,7 @@ class AppViewModel(application: android.app.Application) : AndroidViewModel(appl
             }
         }
     }
-    // Add these methods to your AppViewModel
+
     fun removeMemberFromCurrentGroup(memberName: String) {
         // TODO: Implement API call to remove member
         // For now, this is a stub
@@ -255,6 +223,16 @@ class AppViewModel(application: android.app.Application) : AndroidViewModel(appl
                         )
                     )
                     result.onSuccess { expenseApi ->
+                        // Show notification for new expense (only if user has notifications enabled)
+                        if (notificationsEnabled) {
+                            NotificationHelper.showNewExpenseNotification(
+                                context,
+                                group.name,
+                                amount,
+                                paidBy
+                            )
+                        }
+
                         // Reload expenses for current group
                         loadCurrentGroupExpenses()
                     }.onFailure { exception ->
@@ -268,6 +246,7 @@ class AppViewModel(application: android.app.Application) : AndroidViewModel(appl
             }
         }
     }
+
     fun payDebt(fromUser: String, toUser: String, amount: Double) {
         currentGroup?.let { group ->
             viewModelScope.launch {
@@ -292,6 +271,16 @@ class AppViewModel(application: android.app.Application) : AndroidViewModel(appl
                             )
                         )
                         result.onSuccess {
+                            // Show notification for payment received (only if user is the receiver and has notifications enabled)
+                            if (notificationsEnabled && currentUser?.email == toUserObj.email) {
+                                NotificationHelper.showPaymentReceivedNotification(
+                                    context,
+                                    group.name,
+                                    amount,
+                                    fromUser
+                                )
+                            }
+
                             // Reload expenses for current group
                             loadCurrentGroupExpenses()
                         }.onFailure { exception ->
@@ -329,10 +318,28 @@ class AppViewModel(application: android.app.Application) : AndroidViewModel(appl
         }
     }
 
+    fun sendPaymentReminder(userName: String, amount: Double) {
+        currentGroup?.let { group ->
+            // Show notification that reminder was sent
+            if (notificationsEnabled) {
+                NotificationHelper.sendReminderToDebtor(
+                    context,
+                    group.name,
+                    userName,
+                    amount
+                )
+            }
+
+            // TODO: In a real app, you would also send a push notification to the debtor
+            // This would typically involve calling a backend API endpoint that uses FCM
+            // to send a notification to the debtor's device
+        }
+    }
+
     val notificationsEnabled get() = currentUser?.notifications ?: false
 
     fun toggleNotifications(enabled: Boolean) {
-        // TODO: Implement API call to update notifications
+        // TODO: Implement API call to update notifications preference
         // For now, just update local state if needed
     }
 }

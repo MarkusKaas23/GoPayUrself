@@ -26,6 +26,7 @@ fun GroupDetailScreen(
     onAddExpense: (String, Double, String, List<String>) -> Unit,
     onPayDebt: (String, String, Double) -> Unit,
     onDeleteExpense: (String) -> Unit,
+    onSendReminder: (String, Double) -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -131,7 +132,7 @@ fun GroupDetailScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Expenses Section - TODO: Fetch and display expenses
+            // Expenses Section
             Text(
                 "Expenses:",
                 style = typography.titleMedium,
@@ -186,7 +187,7 @@ fun GroupDetailScreen(
                                         color = colors.onSurfaceVariant
                                     )
                                     Text(
-                                        "Date: ${expense.date.substring(0, 10)}", // Show date part only
+                                        "Date: ${expense.date.substring(0, 10)}",
                                         style = typography.bodySmall,
                                         color = colors.onSurfaceVariant
                                     )
@@ -226,7 +227,7 @@ fun GroupDetailScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Members section with Pay buttons
+            // Members section with Pay and Remind buttons
             Text(
                 "Members:",
                 style = typography.titleMedium,
@@ -236,11 +237,11 @@ fun GroupDetailScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             val allUsers = listOf(group.owner) + group.members.map { it.user }
-            // Show balances for each user with Pay buttons
+            // Show balances for each user with Pay and Remind buttons
             allUsers.forEach { user ->
                 val balance = memberBalances[user.email] ?: 0.0
-                // Show Pay button if current user owes money to this user
                 val shouldShowPayButton = balance > 0 && user.email != currentUserEmail
+                val shouldShowRemindButton = balance < 0 && user.email != currentUserEmail
 
                 Card(
                     modifier = Modifier
@@ -256,7 +257,8 @@ fun GroupDetailScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp)
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(
                             modifier = Modifier.weight(1f)
@@ -281,6 +283,29 @@ fun GroupDetailScreen(
                             )
                         }
 
+                        // Show "Send Reminder" button if this user owes money to current user
+                        if (shouldShowRemindButton) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(
+                                onClick = {
+                                    onSendReminder("${user.firstName} ${user.lastName}", -balance)
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = colors.tertiary,
+                                    contentColor = colors.onTertiary
+                                ),
+                                modifier = Modifier.height(36.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Send,
+                                    contentDescription = "Send Reminder",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Remind", style = typography.labelSmall)
+                            }
+                        }
+
                         // Show Pay button if current user owes money to this user
                         if (shouldShowPayButton) {
                             Spacer(modifier = Modifier.width(8.dp))
@@ -293,7 +318,8 @@ fun GroupDetailScreen(
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = colors.primary,
                                     contentColor = colors.onPrimary
-                                )
+                                ),
+                                modifier = Modifier.height(36.dp)
                             ) {
                                 Icon(Icons.Default.Send, contentDescription = "Pay", modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
@@ -597,8 +623,6 @@ private fun calculateBalancesWithParticipants(group: com.example.gopayurself.api
     expenses.forEach { expense ->
         val payerEmail = expense.payer.email
         val totalAmount = expense.amount
-        val numSplits = expense.splits.size
-        val splitAmount = if (numSplits > 0) totalAmount / numSplits else 0.0
 
         // Payer gets credit for the full amount
         balances[payerEmail] = (balances[payerEmail] ?: 0.0) + totalAmount
