@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +22,7 @@ fun DashboardScreen(
     groups: List<Group>,
     onCreateGroup: () -> Unit,
     onGroupClick: (Group) -> Unit,
+    onNavigateToSettings: () -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -32,6 +34,13 @@ fun DashboardScreen(
             TopAppBar(
                 title = { Text("My Groups", style = typography.titleLarge) },
                 actions = {
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            tint = colors.onSurface
+                        )
+                    }
                     IconButton(onClick = onLogout) {
                         Icon(
                             Icons.Default.ExitToApp,
