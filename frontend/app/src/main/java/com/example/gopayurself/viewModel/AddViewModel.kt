@@ -228,8 +228,6 @@ class AppViewModel(application: android.app.Application) : AndroidViewModel(appl
         }
     }
 
-    // In AppViewModel
-    // In AppViewModel
     fun addExpenseToCurrentGroup(description: String, amount: Double, paidBy: String, participants: List<String>) {
         currentGroup?.let { group ->
             viewModelScope.launch {
