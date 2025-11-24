@@ -15,6 +15,19 @@ class AppViewModel : ViewModel() {
     var currentUserEmail by mutableStateOf("")
         private set
 
+
+    var userFirstName by mutableStateOf("")
+        private set
+
+    var userLastName by mutableStateOf("")
+        private set
+
+    var userPhoneNumber by mutableStateOf("")
+        private set
+
+    var notificationsEnabled by mutableStateOf(true)
+        private set
+
     var groups by mutableStateOf(listOf<Group>())
         private set
 
@@ -24,13 +37,15 @@ class AppViewModel : ViewModel() {
     fun login(email: String) {
         currentUserEmail = email
         isLoggedIn = true
-        // In a real app, load user's groups from backend
+        // fetch user data from backend
+        loadUserProfile()
         loadUserGroups()
     }
 
     fun signup(email: String) {
         currentUserEmail = email
         isLoggedIn = true
+        loadUserProfile()
         loadUserGroups()
     }
 
@@ -39,17 +54,27 @@ class AppViewModel : ViewModel() {
         isLoggedIn = false
         groups = emptyList()
         currentGroup = null
+        userFirstName = ""
+        userLastName = ""
+        userPhoneNumber = ""
+        notificationsEnabled = true
     }
 
-    fun createGroup(name: String, members: List<String>) {
-        val newGroup = Group(
-            id = UUID.randomUUID().toString(),
-            name = name,
-            members = members,
-            createdBy = currentUserEmail
-        )
-        groups = groups + newGroup
-        //  Todo: save to backend
+
+    fun toggleNotifications(enabled: Boolean) {
+        notificationsEnabled = enabled
+        // TODO: Save to backend
+        // API here:
+        // api.updateUserSettings(notificationsEnabled = enabled)
+    }
+
+
+    private fun loadUserProfile() {
+        // TODO: Fetch from backend
+        // For now, using mock data
+        userFirstName = "John"
+        userLastName = "Doe"
+        userPhoneNumber = "+45 12 34 56 78"
     }
 
     fun selectGroup(group: Group) {
@@ -85,7 +110,7 @@ class AppViewModel : ViewModel() {
             )
         )
     }
-    // Add these methods to your AppViewModel
+
     fun removeMemberFromCurrentGroup(memberName: String) {
         currentGroup?.let { group ->
             val updatedGroup = group.copy(
@@ -105,8 +130,6 @@ class AppViewModel : ViewModel() {
         }
     }
 
-    // In AppViewModel
-    // In AppViewModel
     fun addExpenseToCurrentGroup(description: String, amount: Double, paidBy: String, participants: List<String>) {
         currentGroup?.let { group ->
             val newExpense = ExpenseData(
@@ -126,6 +149,7 @@ class AppViewModel : ViewModel() {
             currentGroup = updatedGroup
         }
     }
+
     fun createGroup(name: String, members: List<String>, expenses: List<ExpenseData> = emptyList()) {
         // Calculate total expenses
         val totalExpenses = expenses.sumOf { it.amount }
@@ -140,6 +164,7 @@ class AppViewModel : ViewModel() {
         )
         groups = groups + newGroup
     }
+
     fun payDebt(fromUser: String, toUser: String, amount: Double) {
         currentGroup?.let { group ->
             // Create a settlement expense where the debtor pays the creditor
