@@ -23,7 +23,6 @@ fun DashboardScreen(
     errorMessage: String?,
     onCreateGroup: () -> Unit,
     onGroupClick: (Group) -> Unit,
->>>>>>> origin/master
     onNavigateToSettings: () -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
