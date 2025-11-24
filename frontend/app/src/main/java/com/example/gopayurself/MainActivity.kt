@@ -71,6 +71,9 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
                     viewModel.selectGroup(group)
                     currentScreen = Screen.GroupDetail
                 },
+                onNavigateToSettings = {
+                    currentScreen = Screen.UserSettings
+                },
                 onLogout = {
                     viewModel.logout()
                     currentScreen = Screen.Login
@@ -118,8 +121,26 @@ fun AppNavigation(viewModel: AppViewModel = viewModel()) {
                 )
             }
         }
+        Screen.UserSettings -> {
+            UserSettingsScreen(
+                userEmail = viewModel.currentUserEmail,
+                firstName = viewModel.userFirstName,
+                lastName = viewModel.userLastName,
+                phoneNumber = viewModel.userPhoneNumber,
+                notificationsEnabled = viewModel.notificationsEnabled,
+                onNotificationToggle = { enabled ->
+                    viewModel.toggleNotifications(enabled)
+                },
+                onNavigateBack = {
+                    currentScreen = Screen.Dashboard
+                },
+                onLogout = {
+                    viewModel.logout()
+                    currentScreen = Screen.Login
+                }
+            )
+        }
     }
-
 }
 
 
